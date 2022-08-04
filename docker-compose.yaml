@@ -1,0 +1,54 @@
+version: '3.7'
+
+services:
+    postgres:
+      build:
+        context: postgresql/
+      container_name: postgres
+      restart: always
+      environment:
+        POSTGRES_PASSWORD: "master.2022"
+        PGDATA: /var/lib/postgresql/data/pgdata
+      ports:
+        - 8092:5432
+      volumes:
+        - pgdata:/var/lib/postgresql/data
+        - ./postgresql/create.sql:/docker-entrypoint-initdb.d/create.sql
+      networks:
+          - example-net
+    nodejs-app:
+        build:
+          context: nodejs/
+        container_name: nodejsserver
+        hostname: nodejsserver
+        ports:
+            - "4000:4000" 
+        environment:
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_USER: master
+          DB_PASSWORD: master.2022
+          DB_NAME: arithmetic_operations
+          DATABASE_URL: postgresql://master:master.2022@postgres:5432/arithmetic_operations
+        links:
+          - postgres
+        depends_on:
+          - postgres
+        networks:
+            - example-net 
+    nginx:
+        build:
+          context: nginx/
+        container_name: nginx
+        hostname: nginx
+        ports:
+            - "8091:80" 
+        depends_on:
+            - nodejs-app
+        networks:
+            - example-net
+volumes:
+  pgdata: {}
+networks:
+  example-net:
+    external: true
